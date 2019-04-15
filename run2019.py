@@ -5,6 +5,7 @@ from ev3dev2.sensor.lego import LightSensor
 from ev3dev2.button import Button
 from time import sleep
 import sys, os
+from collections import deque
 
 btn = Button()
 LLight = LightSensor(INPUT_1)
@@ -12,7 +13,7 @@ RLight = LightSensor(INPUT_4)
 drive = MoveTank(OUTPUT_A,OUTPUT_D)
 steer = MoveSteering(OUTPUT_A,OUTPUT_D)
 os.system('setfont Lat15-TerminusBold14')
-speed = 20
+speed = 10
 
 def sensordata():
         print("Left Light Sensor: ", end = "", file = sys.stderr)
@@ -33,20 +34,19 @@ def turn(direc):
             lv = LLight.reflected_light_intensity
             drive.on(left_speed=10, right_speed=0)
             sleep(0.01)
-
-def linefollower(speed):
+def dti(speed, n):
     kp = 1
     ki = 0
     kd = 0
     integral = 0
-    perror = error = 0    
-    while not btn.any():
+    perror = error = 0
+    intersections = 0
+    piderror = 0
+    intlist = deque()
+    while not btn.any(): # Remember to try stuff twice
         lv = LLight.reflected_light_intensity
         rv = RLight.reflected_light_intensity
-        sensordata()
-        
         error = rv - lv
-
         integral += integral + error
         derivative = lv - perror
 
@@ -56,21 +56,18 @@ def linefollower(speed):
                 piderror = 100 - speed
             else:
                 piderror = speed - 100
-            
         drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
         sleep(0.01)
         perror = error
-        
-        print("The P error is:", end = " ", file = sys.stderr)
-        print(piderror, end = " ", file = sys.stderr)
-    
-    def dti(n):
-        intersections = 0
-        while intersections != n-1:
+        intlist.append(intersections)
+        if lv <= 50 and rv <= 55:
             
             intersections += 1
+        print("P error: {}, Intersections: {}".format(piderror, intersections), file=sys.stderr)
 def main():
-    linefollower(speed)
+    # while not btn.any():
+    #     sensordata()
+    dti(speed, 3)
 
 if __name__ == "__main__":
     main()
@@ -93,7 +90,7 @@ Is np black?
         Drive past intersection to red zone to place
         Orient claw in red position
         Drop bnp
-        Back up
+        Back up 
         Reorient Claw to accept a new bnp
 Similar process for blue part
 .
