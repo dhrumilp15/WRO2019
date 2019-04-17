@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
 from ev3dev2.motor import LargeMotor, OUTPUT_C, OUTPUT_B, OUTPUT_D, OUTPUT_A, SpeedDPS, MoveTank, MoveSteering, SpeedPercent
 from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3, INPUT_4
-from ev3dev2.sensor.lego import LightSensor
+from ev3dev2.sensor.lego import LightSensor, ColorSensor
 from ev3dev2.button import Button
 from time import sleep
 import sys, os
-from collections import deque
 
 btn = Button()
+
 LLight = LightSensor(INPUT_1)
 RLight = LightSensor(INPUT_4)
+cs = ColorSensor()
+
 drive = MoveTank(OUTPUT_A,OUTPUT_D)
 steer = MoveSteering(OUTPUT_A,OUTPUT_D)
+
 os.system('setfont Lat15-TerminusBold14')
+
 speed = 10
+orient = {'N': "1",
+          'E': "1",
+          'S': "1",
+          'W': "1"}
 
 def sensordata():
         print("Left Light Sensor: ", end = "", file = sys.stderr)
@@ -21,29 +29,28 @@ def sensordata():
         print("Right Light Sensor: ", end = "", file = sys.stderr)
         print(RLight.reflected_light_intensity, file = sys.stderr)
 
-def turn(direc):
+def turn(direc): # Tune so that we position ourselves properly on the line
     lv = LLight.reflected_light_intensity
     rv = RLight.reflected_light_intensity
     if direc == "L" or direc == "l":
         while rv > 50:
-            rv = RLight.reflected_light_intensity
             drive.on(left_speed=0, right_speed=10)
-            sleep(0.01)
     elif direc == "R" or direc == "r":
         while lv > 50:
             lv = LLight.reflected_light_intensity
             drive.on(left_speed=10, right_speed=0)
             sleep(0.01)
-def dti(speed, n):
-    kp = 1
+    drive.off()
+
+def dti(speed, n, kp): # Drive to nth intersection
+    kp = kp
     ki = 0
     kd = 0
     integral = 0
     perror = error = 0
-    intersections = 0
+    inters = 0
     piderror = 0
-    intlist = deque()
-    while not btn.any(): # Remember to try stuff twice
+    while not btn.any(): # Remember to try stuff twice, this is a keyboard interrupt
         lv = LLight.reflected_light_intensity
         rv = RLight.reflected_light_intensity
         error = rv - lv
@@ -59,15 +66,82 @@ def dti(speed, n):
         drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
         sleep(0.01)
         perror = error
-        intlist.append(intersections)
-        if lv <= 50 and rv <= 55:
-            
-            intersections += 1
-        print("P error: {}, Intersections: {}".format(piderror, intersections), file=sys.stderr)
+        
+        # Drive up to nth intersection
+        if lv <= 50 and rv <= 55: # Currently at an intersection 
+            if inters == n: # Currently at nth intersection
+                drive.off()
+                return
+            drive.off()
+            drive.on_for_degrees(speed, speed, 20) 
+            inters += 1
+
+        print("Left Value: {}, Right Value: {}, P error: {}, Intersections: {}".format(lv, rv, piderror, inters), file=sys.stderr)
+
+def assigncolours(speed):
+    kp = 0.5
+    ki = 0
+    kd = 0
+    integral = 0
+    perror = error = 0
+    piderror = 0
+    while not btn.any(): # Remember to try stuff twice, this is a keyboard interrupt
+        lv = LLight.reflected_light_intensity
+        rv = RLight.reflected_light_intensity
+        error = rv - lv
+        integral += integral + error
+        derivative = lv - perror
+
+        piderror = (error * kp) + (integral * ki) + (derivative * kd)
+        if speed + abs(piderror) > 100:
+            if piderror >= 0:
+                piderror = 100 - speed
+            else:
+                piderror = speed - 100
+        drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
+        sleep(0.01)
+        perror = error
+        print(cs.color, file = sys.stderr)
+        
+        if cs.color != cs.COLOR_NOCOLOR and cs.color in [cs.COLOR_RED, cs.COLOR_GREEN, cs.COLOR_YELLOW, cs.COLOR_BLUE]:
+            if orient["E"] == "1":
+                orient["E"] = cs.color
+                eastcolour = cs.color
+                while cs.color == eastcolour:
+                    drive.on(10,10)
+            else:
+                if orient["S"] == "1":
+                    orient["S"] = cs.color
+                    drive.on_for_degrees(speed, speed, degrees=40)
+                    southcolour = cs.color
+                    while cs.color == southcolour:
+                        drive.on(10,10)
+                else:
+                    if orient["W"] == "1":
+                        orient["W"] = cs.color
+                        drive.on_for_degrees(speed, speed, degrees=40)
+                        westcolour = cs.color
+                        while cs.color == westcolour:
+                            drive.on(10,10)
+                    else:
+                        if orient["N"] == "1":
+                            orient["N"] = cs.color
+                            drive.on_for_degrees(speed, speed, degrees=40)
+                            northcolour = cs.color
+                            while cs.color == northcolour:
+                                drive.on(10,10)
+        if lv <= 50 and rv >= 55:
+            drive.off()
+            return
+
 def main():
     # while not btn.any():
     #     sensordata()
-    dti(speed, 3)
+    ## STORING COLOURS
+    # drive.on_for_degrees(left_speed=speed, right_speed=speed, degrees=50) # To drive past little initial intersection
+    # assigncolours(speed)
+    # print(orient, file = sys.stderr)
+    turn("L")
 
 if __name__ == "__main__":
     main()
