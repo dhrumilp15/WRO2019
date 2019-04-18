@@ -33,6 +33,7 @@ def turn(direc): # Tune so that we position ourselves properly on the line
     lv = LLight.reflected_light_intensity
     rv = RLight.reflected_light_intensity
     if direc == "L" or direc == "l":
+        drive.on_for_degrees(-speed, speed, 10)
         while rv > 50:
             drive.on(left_speed=0, right_speed=10)
     elif direc == "R" or direc == "r":
