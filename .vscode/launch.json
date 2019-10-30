@@ -5,7 +5,7 @@
             "name": "Download and Run run2019",
             "type": "ev3devBrowser",
             "request": "launch",
-            "program": "/home/robot/${workspaceRootFolderName}/run2019.py"
+            "program": "/home/robot/${workspaceRootFolderName}/pids.py"
         }
     ]
 }

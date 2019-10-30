@@ -29,9 +29,9 @@ class run2019:
         self.speed = 40
         self.sectionCache = 0
         self.orient = {'N': "1",
-                'E': "1",
-                'S': "1",
-                'W': "1"}
+                        'E': "1",
+                        'S': "1",
+                        'W': "1"}
 
     def sensordata(self):
             print("Left Light Sensor: ", end = "", file = sys.stderr)
@@ -85,163 +85,6 @@ class run2019:
                 self.drive.on_for_seconds(SpeedDPS(115), SpeedDPS(115), 1) 
 
             print("Left Value: {}, Right Value: {}, P error: {}, Inters: {}".format(lv, rv, piderror, inters), file=sys.stderr)
-
-    def assigncolours(self, speed): # Does beginning, up to first intersection
-        kp = 1
-        ki = 0
-        kd = 0
-        integral = 0
-        perror = error = 0
-        piderror = 0
-        while not self.btn.any(): # Remember to try stuff twice, this is a keyboard interrupt
-            lv = self.LLight.reflected_light_intensity
-            rv = self.RLight.reflected_light_intensity
-            error = rv - lv
-            integral += integral + error
-            derivative = lv - perror
-
-            piderror = (error * kp) + (integral * ki) + (derivative * kd)
-            if speed + abs(piderror) > 100:
-                if piderror >= 0:
-                    piderror = 100 - speed
-                else:
-                    piderror = speed - 100
-            self.drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
-            sleep(0.01)
-            perror = error
-            print(self.cs.color, file = sys.stderr)
-            
-            if self.cs.color != self.cs.COLOR_NOCOLOR and self.cs.color in [self.cs.COLOR_RED, self.cs.COLOR_GREEN, self.cs.COLOR_YELLOW, self.cs.COLOR_BLUE]:
-                if self.orient["E"] == "1":
-                    self.orient["E"] = self.cs.color
-                    eastcolour = self.cs.color
-                    while self.cs.color == eastcolour:
-                        self.drive.on(10,10)
-                else:
-                    if self.orient["S"] == "1":
-                        self.orient["S"] = self.cs.color
-                        self.drive.on_for_degrees(speed, speed, degrees=40)
-                        southcolour = self.cs.color
-                        while self.cs.color == southcolour:
-                            self.drive.on(10,10)
-                    else:
-                        if self.orient["W"] == "1":
-                            self.orient["W"] = self.cs.color
-                            self.drive.on_for_degrees(speed, speed, degrees=40)
-                            westcolour = self.cs.color
-                            while self.cs.color == westcolour:
-                                self.drive.on(10,10)
-                        else:
-                            if self.orient["N"] == "1":
-                                self.orient["N"] = self.cs.color
-                                self.drive.on_for_degrees(speed, speed, degrees=40)
-                                northcolour = self.cs.color
-                                while self.cs.color == northcolour:
-                                    self.drive.on(10,10)
-            if lv <= 50 and rv >= 55:
-                self.drive.off()
-                return
-
-    def ballDrop(self, speed):
-        self.dti(speed,3)
-        self.turn('L')
-        self.heightmotor.on_for_degrees(speed=30, degrees=-20)
-        self.drive.on_for_degrees(self.speed, self.speed, degrees = 360)
-        self.drive.off()
-        self.turn('L')
-        self.turn('r')
-        self.drive.on_for_degrees(-self.speed, -self.speed, degrees = 360)
-        self.turn('r')
-        
-
-    def goToDrop (self, color):
-        if (self.sectionCache > 1 and self.sectionCache <3 or self.sectionCache>3):
-            if(color == 'r' or color == 'R'):
-                self.steer.on_for_degrees(steering=-100, speed = SpeedDPS(720), degrees=720) # Figure out 180 turn
-                self.dti(self.speed, self.sectionCache - 1)
-                self.drive.off()
-                self.turn('R')
-                self.drive.on_for_degrees(self.speed, self.speed, degrees = 180)
-        elif (self.sectionCache == 1 or self.sectionCache == 3):
-                self.steer.on_for_degrees(steering=-100, speed = SpeedDPS(720), degrees=720) # Figure out 180 turn
-                self.drive.on_for_degrees(self.speed, self.speed, degrees=180)
-        
-    def returnToSender (self, speed):
-        self.steer.on_for_degrees(steering=-100, speed = SpeedDPS(720), degrees=720) # Figure out 180 turn
-        self.drive.on_for_degrees(speed, speed, degrees=180)
-        self.dti(self.speed, self.sectionCache - 1)
-        
-    def pid(self, speed):
-        lv = self.LLight.reflected_light_intensity
-        rv = self.RLight.reflected_light_intensity
-        kp = 1
-        ki = 0
-        kd = 0
-        integral = 0
-        perror = error = 0
-        piderror = 0
-        while not self.btn.any(): # Remember to try stuff twice, this is a keyboard interrupt
-            lv = self.LLight.reflected_light_intensity
-            rv = self.RLight.reflected_light_intensity
-            error = rv - lv
-            integral += integral + error
-            derivative = lv - perror
-
-            piderror = (error * kp) + (integral * ki) + (derivative * kd)
-            if speed + abs(piderror) > 100:
-                if piderror >= 0:
-                    piderror = 100 - speed
-                else:
-                    piderror = speed - 100
-            self.drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
-            sleep(0.01)
-            perror = error
-
-    def firstbnp(self, speed):
-        lv = self.LLight.reflected_light_intensity
-        rv = self.RLight.reflected_light_intensity
-        kp = 1
-        ki = 0
-        kd = 0
-        integral = 0
-        perror = error = 0
-        piderror = 0
-        while not self.btn.any(): # Remember to try stuff twice, this is a keyboard interrupt
-            lv = self.LLight.reflected_light_intensity
-            rv = self.RLight.reflected_light_intensity
-            error = rv - lv
-            integral += integral + error
-            derivative = lv - perror
-
-            piderror = (error * kp) + (integral * ki) + (derivative * kd)
-            if speed + abs(piderror) > 100:
-                if piderror >= 0:
-                    piderror = 100 - speed
-                else:
-                    piderror = speed - 100
-            self.drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
-            sleep(0.01)
-            perror = error
-            if self.cs.color == self.cs.COLOR_BLACK:
-                self.drive.off()
-                self.steer.on_for_degrees(steering=100, speed = SpeedDPS(336), degrees=500)
-                # self.drive.on_for_degrees(SpeedDPS(360), SpeedDPS(360), 100) # Overshoot
-                # self.heightmotor.on_for_degrees(speed=30, degrees=-20)
-                # self.drive.on_for_degrees(20,20,-30)
-                # self.clawactuator.on(speed=30)
-                # self.heightmotor.on_for_degrees(speed=30, degrees = 20)
-                # self.steer.on_for_degrees(steering=-100, speed = SpeedDPS(720), degrees=720) # Figure out 180 turn
-                # self.dti(speed, 1) # ASSUME: ROBOT IS GOING STRAIGHT
-                # self.pidtocolour(speed)
-                # self.drive.on_for_degrees(speed, speed, degrees=180)
-
-                # self.goToDrop("r")
-                # self.clawactuator.off()
-                # self.heightmotor.on_for_degrees(speed,degrees=-50)
-                # self.clawactuator.on(-speed)
-                # self.clawactuator.wait_until_not_moving()
-                # self.returnToSender(30)
-            
                 
     def main(self):
         self.heightmotor.on(speed=self.speed)
@@ -250,14 +93,12 @@ class run2019:
         # #     sensordata()
         # # ## STORING COLOURS
         self.drive.on_for_degrees(left_speed=self.speed, right_speed=self.speed, degrees=50) # To drive past little initial intersection
-        self.assigncolours(self.speed)
         print(self.orient, file = sys.stderr) #DEBUG
         self.turn("L")
         # # # GO TO FIRST BNPs
         self.dti(self.speed, 5, startCounting=True)
         self.turn("L")
-        self.dti(self.speed, 1)
-        self.firstbnp(self.speed)
+        self.dti(self.speed, 1)        
         # while not self.btn.any():
         #     print(self.cs.color)
         #     print(self.cs.color, file=sys.stderr)
