@@ -19,22 +19,24 @@ ki = 0
 integral = 0
 perror = error = 0
 piderror = 0
-while not btn.any():
+while not btn.any(): 
     lv = LLight.reflected_light_intensity
     rv = RLight.reflected_light_intensity
-    error = rv - lv
-    integral += integral + error
-    derivative = lv - perror
+    error = round(rv,5) - round(lv,5)
+    integral += error
+    derivative = error - perror
 
     piderror = (error * kp) + (integral * ki) + (derivative * kd)
     
-    if math.isnan(piderror):
-        piderror = perror
+    if math.isnan(piderror): # Need to figure out how to better handle NaNs
+    	piderror = perror
 
     if speed + abs(piderror) > 100:
         if piderror >= 0:
             piderror = 100 - speed
         else:
             piderror = speed - 100
+
     drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
+	#sleep(0.01) for debugging purposes, causes errors as robot can't update values when in sleep()
     perror = error
