@@ -49,4 +49,3 @@ class ThreadedPID(object):
 			self.drive.on(left_speed = speed - piderror, right_speed= speed + piderror)
 			#sleep(0.01) for debugging purposes, causes errors as robot can't update values when in sleep()
 			perror = error
-biggo = ThreadedPID()
